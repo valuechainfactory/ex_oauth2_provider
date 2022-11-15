@@ -68,7 +68,7 @@ defmodule ExOauth2Provider.Applications do
     |> Config.repo(config).get_by(uid: uid)
   end
 
-   @doc """
+  @doc """
   Gets a single application by uid and secret.
   Public clients cannot be trusted with a secret and are therefore not required to use one to fetch a token.
 
@@ -86,6 +86,7 @@ defmodule ExOauth2Provider.Applications do
   """
   @spec load_application(binary(), binary(), keyword()) :: Application.t() | nil
   def load_application(uid, secret, config \\ [])
+
   def load_application(uid, secret, config) when secret in [nil, ""] do
     config
     |> Config.application()
@@ -116,6 +117,23 @@ defmodule ExOauth2Provider.Applications do
     config
     |> Config.application()
     |> where([a], a.owner_id == ^resource_owner.id)
+    |> Config.repo(config).all()
+  end
+
+  @doc """
+  Returns all internal applications.
+
+  ## Examples
+
+      iex> get_internal_applications(otp_app: :my_app)
+      [%OauthApplication{internal: true}, ...]
+
+  """
+  @spec get_internal_applications(keyword()) :: [Application.t()]
+  def get_internal_applications(config \\ []) do
+    config
+    |> Config.application()
+    |> where([a], a.internal)
     |> Config.repo(config).all()
   end
 
@@ -166,7 +184,8 @@ defmodule ExOauth2Provider.Applications do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_application(Schema.t(), map(), keyword()) :: {:ok, Application.t()} | {:error, Changeset.t()}
+  @spec create_application(Schema.t(), map(), keyword()) ::
+          {:ok, Application.t()} | {:error, Changeset.t()}
   def create_application(owner, attrs \\ %{}, config \\ []) do
     config
     |> Config.application()
@@ -187,7 +206,8 @@ defmodule ExOauth2Provider.Applications do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_application(Application.t(), map(), keyword()) :: {:ok, Application.t()} | {:error, Changeset.t()}
+  @spec update_application(Application.t(), map(), keyword()) ::
+          {:ok, Application.t()} | {:error, Changeset.t()}
   def update_application(application, attrs, config \\ []) do
     application
     |> Application.changeset(attrs, config)
@@ -206,7 +226,8 @@ defmodule ExOauth2Provider.Applications do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_application(Application.t(), keyword()) :: {:ok, Application.t()} | {:error, Changeset.t()}
+  @spec delete_application(Application.t(), keyword()) ::
+          {:ok, Application.t()} | {:error, Changeset.t()}
   def delete_application(application, config \\ []) do
     Config.repo(config).delete(application)
   end
@@ -220,11 +241,12 @@ defmodule ExOauth2Provider.Applications do
       {:ok, [ok: %OauthAccessToken{}]}
 
   """
-  @spec revoke_all_access_tokens_for(Application.t(), Schema.t(), keyword()) :: {:ok, [ok: AccessToken.t()]} | {:error, any()}
+  @spec revoke_all_access_tokens_for(Application.t(), Schema.t(), keyword()) ::
+          {:ok, [ok: AccessToken.t()]} | {:error, any()}
   def revoke_all_access_tokens_for(application, resource_owner, config \\ []) do
     repo = Config.repo(config)
 
-    repo.transaction fn ->
+    repo.transaction(fn ->
       config
       |> Config.access_token()
       |> where([a], a.resource_owner_id == ^resource_owner.id)
@@ -232,6 +254,6 @@ defmodule ExOauth2Provider.Applications do
       |> where([o], is_nil(o.revoked_at))
       |> repo.all()
       |> Enum.map(&AccessTokens.revoke(&1, config))
-    end
+    end)
   end
 end
