@@ -116,7 +116,7 @@ defmodule ExOauth2Provider.Applications do
   def get_applications_for(resource_owner, config \\ []) do
     config
     |> Config.application()
-    |> where([a], a.owner_id == ^resource_owner.id)
+    |> where([a], a.owner_id == ^resource_owner.id and not a.internal)
     |> Config.repo(config).all()
   end
 
