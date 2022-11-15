@@ -46,7 +46,10 @@ defmodule ExOauth2Provider.Applications do
   def get_application_for!(resource_owner, uid, config \\ []) do
     config
     |> Config.application()
-    |> Config.repo(config).get_by!(owner_id: resource_owner.id, uid: uid)
+    |> where([a], (a.owner_id == ^resource_owner.id or a.internal) and a.uid == ^uid)
+    |> Config.repo(config).all()
+
+    # |> Config.repo(config).get_by!(owner_id: resource_owner.id, uid: uid)
   end
 
   @doc """
